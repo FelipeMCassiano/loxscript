@@ -1,3 +1,4 @@
+import { which } from "bun";
 import { TokenType, type Token } from "./token";
 
 interface ScannerContext {
@@ -68,16 +69,135 @@ function scanToken(context: ScannerContext): any {
         case "}":
             addToken(TokenType.LEFT_BRACE, context);
             break;
+        case ",":
+            addToken(TokenType.COMMA, context);
+            break;
+        case ".":
+            addToken(TokenType.DOT, context);
+            break;
+        case "-":
+            addToken(TokenType.MINUS, context);
+            break;
+        case "+":
+            addToken(TokenType.PLUS, context);
+            break;
+        case ";":
+            addToken(TokenType.SEMICOLON, context);
+            break;
+        case "*":
+            addToken(TokenType.STAR, context);
+            break;
+        case "!":
+            addToken(match(context, "=") ? TokenType.BANG_EQUAL : TokenType.BANG_EQUAL, context);
+            break;
+        case "=":
+            addToken(match(context, "=") ? TokenType.EQUAL_EQUAL : TokenType.EQUAL, context);
+            break;
+        case "<":
+            addToken(match(context, "=") ? TokenType.LESS_EQUAL : TokenType.LESS, context);
+            break;
+        case ">":
+            addToken(match(context, "=") ? TokenType.LESS_EQUAL : TokenType.LESS, context);
+            break;
+        case "/":
+            if (match(context, "/")) {
+                while (peek(context) != "\n" && !isAtEnd(context)) advance(context);
+            } else {
+                addToken(TokenType.SLASH, context);
+            }
+            break;
+        case " ":
+        case "\r":
+        case "\t":
+            break;
+        case "\n":
+            context.line++;
+            break;
+        case '"':
+            string(context);
+            break;
+        case "o":
+            if (match(context, "r")) {
+                addToken(TokenType.OR, context);
+            }
+            break;
+        default:
+            if (isDigit(c)) {
+                number(context);
+            } else if (isAlpha(c)) {
+                identifier(context);
+            } else {
+                const token = context.tokens[context.line];
+            }
+            break;
     }
 }
+const identifier = (context: ScannerContext) => {
+    while (isAlphaNumeric(peek(context))) advance(context);
+    const text = context.source.substring(context.start, context.current);
+    let typeK = context.keywords.get(text);
+    if (typeK === null) typeK = TokenType.IDENTIFIER;
+
+    addToken(typeK!, context);
+};
+
+const isAlpha = (c: string): boolean =>
+    (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || c === "_";
+const isAlphaNumeric = (c: string) => isAlpha(c) || isDigit(c);
+
+const number = (context: ScannerContext) => {
+    while (isDigit(peek(context))) advance(context);
+
+    if (peek(context) === "." && isDigit(peekNext(context))) {
+        advance(context);
+    }
+
+    while (isDigit(peek(context))) advance(context);
+
+    addToken(
+        TokenType.NUMBER,
+        context,
+        parseFloat(context.source.substring(context.start, context.current)),
+    );
+};
+
+const isDigit = (c: string): boolean => c >= "0" && c <= "9";
+
+const string = (context: ScannerContext) => {
+    while (peek(context) != '"' && !isAtEnd(context)) {
+        if (peek(context) === "\n") context.line++;
+        advance(context);
+    }
+    advance(context);
+    const value = context.source.substring(context.start + 1, context.current - 1);
+    addToken(TokenType.STRING, context, value);
+};
+
+const peek = (context: ScannerContext): string => {
+    if (isAtEnd(context)) return "\0";
+    return context.source.charAt(context.current);
+};
+
+const peekNext = (context: ScannerContext): string => {
+    if (context.current + 1 >= context.source.length) return "\0";
+    return context.source.charAt(context.current + 1);
+};
+
+const match = (context: ScannerContext, expected: String): boolean => {
+    if (isAtEnd(context)) return false;
+    if (context.source.charAt(context.current) != expected) return false;
+
+    context.current++;
+
+    return true;
+};
+
 const isAtEnd = (context: ScannerContext): boolean => context.current >= context.source.length;
 
-function advance(context: ScannerContext): string {
-    return context.source.charAt(context.current++);
-}
+const advance = (context: ScannerContext): string => context.source.charAt(context.current++);
 
-function addToken(type: TokenType, context: ScannerContext, literal: Object = {}) {
+const addToken = (type: TokenType, context: ScannerContext, literal: Object = {}) => {
     const text = context.source.substring(context.start, context.current);
     const token: Token = { tokenType: type, lexeme: text, literal: literal, line: context.line };
     context.tokens.push(token);
-}
+};
