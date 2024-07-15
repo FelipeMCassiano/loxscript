@@ -1,3 +1,5 @@
+import { resolve } from "bun";
+
 export enum TokenType {
     LEFT_PAREN = "LEFT_PAREN",
     RIGHT_PAREN = "RIGHT_PAREN",
@@ -44,6 +46,9 @@ export enum TokenType {
 export interface Token {
     tokenType: TokenType;
     lexeme: string;
-    literal: Object;
+    literal: any;
     line: number;
 }
+
+export const tokenToStr = (token: Token): string =>
+    `type: ${token.tokenType} lexeme: ${token.lexeme} literal: ${token.literal}`;

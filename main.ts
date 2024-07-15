@@ -1,4 +1,5 @@
-import { file } from "bun";
+import { runFile, runPrompt } from "./lox/lox";
+
 function main() {
     const args = process.argv.slice(2);
 
@@ -12,18 +13,3 @@ function main() {
     }
 }
 main();
-
-function runFile(path: string) {
-    const content = file(path);
-    run(content.toString());
-}
-
-function runPrompt() {
-    while (true) {
-        const line = prompt(">");
-        if (line == null) break;
-        run(line);
-    }
-}
-
-function run(source: string) {}

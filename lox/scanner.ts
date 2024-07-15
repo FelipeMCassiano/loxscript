@@ -1,4 +1,3 @@
-import { which } from "bun";
 import { TokenType, type Token } from "./token";
 
 interface ScannerContext {
@@ -10,7 +9,7 @@ interface ScannerContext {
     keywords: Map<string, TokenType>;
 }
 
-function initScannerContext(source: string): ScannerContext {
+export function initScannerContext(source: string): ScannerContext {
     const keywords = new Map([
         ["and", TokenType.AND],
         ["class", TokenType.CLASS],
@@ -39,10 +38,8 @@ function initScannerContext(source: string): ScannerContext {
         keywords: keywords,
     };
 }
-export function scanner(source: string) {
-    const context = initScannerContext(source);
-
-    scanTokens(context);
+export function scanner(source: string, context: ScannerContext): Token[] {
+    return scanTokens(context);
 }
 
 function scanTokens(context: ScannerContext): Token[] {
@@ -50,7 +47,14 @@ function scanTokens(context: ScannerContext): Token[] {
         context.start = context.current;
         scanToken(context);
     }
-    return 1 as never;
+    const token: Token = {
+        tokenType: TokenType.EOF,
+        lexeme: "",
+        literal: null,
+        line: context.line,
+    };
+    context.tokens.push(token);
+    return context.tokens;
 }
 
 function scanToken(context: ScannerContext): any {
@@ -88,7 +92,7 @@ function scanToken(context: ScannerContext): any {
             addToken(TokenType.STAR, context);
             break;
         case "!":
-            addToken(match(context, "=") ? TokenType.BANG_EQUAL : TokenType.BANG_EQUAL, context);
+            addToken(match(context, "=") ? TokenType.BANG_EQUAL : TokenType.BANG, context);
             break;
         case "=":
             addToken(match(context, "=") ? TokenType.EQUAL_EQUAL : TokenType.EQUAL, context);
@@ -196,7 +200,7 @@ const isAtEnd = (context: ScannerContext): boolean => context.current >= context
 
 const advance = (context: ScannerContext): string => context.source.charAt(context.current++);
 
-const addToken = (type: TokenType, context: ScannerContext, literal: Object = {}) => {
+const addToken = (type: TokenType, context: ScannerContext, literal: any = null) => {
     const text = context.source.substring(context.start, context.current);
     const token: Token = { tokenType: type, lexeme: text, literal: literal, line: context.line };
     context.tokens.push(token);
