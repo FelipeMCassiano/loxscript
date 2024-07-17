@@ -1,5 +1,4 @@
 import { type Token } from "./token";
-// Define the Expr types
 export type Expr = Literal | Grouping | Unary | Binary;
 
 export interface Literal {

@@ -1,15 +1,20 @@
 import { createBinary, type Expr, createUnary, createLiteral, createGrouping } from "./expressions";
+import { createExpressionStmt, createPrintStmt, type Stmt } from "./stmt";
 import { TokenType, type Token } from "./token";
 
 interface ParserContext {
     current: number;
     tokens: Token[];
 }
-export function parse(context: ParserContext): Expr {
+export function parse(context: ParserContext): Stmt[] {
     try {
-        return expression(context);
+        const statements: Stmt[] = [];
+        while (!isAtEnd(context)) {
+            statements.push(statement(context));
+        }
+        return statements;
     } catch (e: any) {
-        throw Error(e.message);
+        throw Error(`(ParserError) ${e.message}`);
     }
 }
 
@@ -18,6 +23,22 @@ export const initParserContext = (tokens: Token[]): ParserContext => {
 };
 
 const expression = (context: ParserContext): Expr => equality(context);
+
+const statement = (context: ParserContext): Stmt => {
+    if (match(context, TokenType.PRINT)) return printStatement(context);
+    return expressionStatement(context);
+};
+
+const printStatement = (context: ParserContext): Stmt => {
+    const value = expression(context);
+    consume(TokenType.SEMICOLON, "Expect ';' after value", context);
+    return createPrintStmt(value);
+};
+const expressionStatement = (context: ParserContext): Stmt => {
+    const expr = expression(context);
+    consume(TokenType.SEMICOLON, "Expect ';' after expression", context);
+    return createExpressionStmt(expr);
+};
 
 const equality = (context: ParserContext): Expr => {
     let expr = comparison(context);
@@ -95,8 +116,7 @@ const primary = (context: ParserContext): Expr => {
         return createGrouping(expr);
     }
 
-    // TODO: error treating
-    throw Error;
+    throw Error(`${peek(context)}: "Expect expression `);
 };
 
 const match = (context: ParserContext, ...types: TokenType[]): boolean => {
@@ -112,8 +132,7 @@ const match = (context: ParserContext, ...types: TokenType[]): boolean => {
 
 const consume = (typeT: TokenType, message: string, context: ParserContext) => {
     if (check(typeT, context)) return advance(context);
-    // TODO: error treating
-    throw Error(message);
+    throw Error(`line: ${peek(context).line} ${message}`);
 };
 
 const check = (typeT: TokenType, context: ParserContext): boolean => {

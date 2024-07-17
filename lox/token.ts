@@ -1,5 +1,3 @@
-import { resolve } from "bun";
-
 export enum TokenType {
     LEFT_PAREN = "LEFT_PAREN",
     RIGHT_PAREN = "RIGHT_PAREN",

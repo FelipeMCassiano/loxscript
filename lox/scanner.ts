@@ -38,7 +38,7 @@ export function initScannerContext(source: string): ScannerContext {
         keywords: keywords,
     };
 }
-export function scanner(source: string, context: ScannerContext): Token[] {
+export function scanner(context: ScannerContext): Token[] {
     return scanTokens(context);
 }
 
@@ -132,6 +132,7 @@ function scanToken(context: ScannerContext): any {
                 identifier(context);
             } else {
                 const token = context.tokens[context.line];
+                throw Error(`${token} Unexpected character`);
             }
             break;
     }

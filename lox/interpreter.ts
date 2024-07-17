@@ -1,12 +1,14 @@
 import { type Binary, type Expr, type Grouping, type Literal, type Unary } from "./expressions";
+import type { Expression, Print, Stmt } from "./stmt";
 import { TokenType, type Token } from "./token";
 
-export function interpret(expr: Expr) {
+export function interpret(statements: Stmt[]) {
     try {
-        const value = evaluate(expr);
-        console.log(stringfy(value));
+        for (const stmt of statements) {
+            execute(stmt);
+        }
     } catch (e: any) {
-        throw Error(`RuntimeError: ${e.message}`);
+        throw Error(`(RuntimeError) ${e.message}`);
     }
 }
 
@@ -22,6 +24,31 @@ function evaluate(expr: Expr): Object {
             return visitBinary(expr);
     }
 }
+
+function execute(stmt: Stmt): void {
+    switch (stmt.type) {
+        case "Expression":
+            return visitExpressionStmt(stmt);
+        case "Print":
+            return visitPrintStmt(stmt);
+        case "Block":
+        case "Class":
+        case "Function":
+        case "If":
+        case "Return":
+        case "Var":
+        case "While":
+    }
+}
+const visitExpressionStmt = (stmt: Expression): void => {
+    evaluate(stmt.expression);
+    return;
+};
+const visitPrintStmt = (stmt: Print): void => {
+    const value = evaluate(stmt.expression);
+    console.log(stringfy(value));
+    return;
+};
 
 const visitLiteralExpr = (expr: Literal): Object => {
     return expr.value;
